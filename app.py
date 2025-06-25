@@ -1,58 +1,29 @@
 from flask import Flask, request, jsonify, send_file
-import uuid
+from openpyxl import Workbook
 import os
-import pandas as pd
 
 app = Flask(__name__)
 
-# Store job results in memory for simplicity
-jobs = {}
+@app.route('/generate-excel', methods=['POST'])
+def generate_excel():
+    data = request.get_json()
+    print("Received data:", data)
 
-@app.route('/')
-def home():
-    return '✅ Excel Generator API is up and running!'
+    wb = Workbook()
+    ws = wb.active
+    ws.append(['Key', 'Value'])
+    for key, value in data.items():
+        ws.append([key, value])
 
-@app.route('/start-excel-job', methods=['POST'])
-def start_excel_job():
-    try:
-        data = request.json.get('data')
-        if not data:
-            return jsonify({'error': 'Missing data'}), 400
+    file_path = "generated_file.xlsx"
+    wb.save(file_path)
 
-        # Create job ID
-        job_id = str(uuid.uuid4())
-        file_path = f'{job_id}.xlsx'
+    return jsonify({"url": f"https://{request.host}/download"})
 
-        # Convert data to DataFrame and save as Excel
-        df = pd.DataFrame(data)
-        df.to_excel(file_path, index=False)
-
-        # Store job
-        jobs[job_id] = {
-            'status': 'completed',
-            'file': file_path
-        }
-
-        return jsonify({'job_id': job_id}), 200
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
-
-@app.route('/status/<job_id>', methods=['GET'])
-def get_job_status(job_id):
-    job = jobs.get(job_id)
-    if not job:
-        return jsonify({'error': 'Job not found'}), 404
-    return jsonify({'status': job['status']}), 200
-
-@app.route('/download/<job_id>', methods=['GET'])
-def download_excel(job_id):
-    job = jobs.get(job_id)
-    if not job:
-        return jsonify({'error': 'Job not found'}), 404
-    file_path = job['file']
-    if not os.path.exists(file_path):
-        return jsonify({'error': 'File not found'}), 404
-    return send_file(file_path, as_attachment=True)
+@app.route('/download', methods=['GET'])
+def download_file():
+    return send_file("generated_file.xlsx", as_attachment=True)
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host='0.0.0.0', port=port)
