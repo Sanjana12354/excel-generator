@@ -4,6 +4,9 @@ import os
 
 app = Flask(__name__)
 
+EXCEL_FILENAME = "MTV-QC-FM-013A_Rev.00 - MTC.xlsx"
+EXCEL_PATH = os.path.join(os.getcwd(), EXCEL_FILENAME)
+
 @app.route('/generate-excel', methods=['POST'])
 def generate_excel():
     data = request.get_json()
@@ -15,14 +18,13 @@ def generate_excel():
     for key, value in data.items():
         ws.append([key, value])
 
-    file_path = "generated_file.xlsx"
-    wb.save(file_path)
+    wb.save(EXCEL_PATH)
 
     return jsonify({"url": f"https://{request.host}/download"})
 
 @app.route('/download')
 def download_file():
-    return send_file("generated_file.xlsx", as_attachment=True)
+    return send_file(EXCEL_PATH, as_attachment=True)
 
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5000))
