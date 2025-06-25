@@ -1,59 +1,41 @@
 from flask import Flask, request, send_file, jsonify
 import openpyxl
 import os
+import uuid
 
 app = Flask(__name__)
 
 @app.route('/generate-excel', methods=['POST'])
 def generate_excel():
     try:
-        # Get JSON payload
         data = request.get_json()
 
-        # Create a new Excel workbook
-        wb = openpyxl.Workbook()
+        # Load the existing template
+        template_path = "MTV-QC-FM-013A_Rev.00 - MTC.xlsx"
+        wb = openpyxl.load_workbook(template_path)
         ws = wb.active
-        ws.title = "Order Data"
 
-        # Optional: Set headers
-        ws.append([
-            'CUSTOMER_NAME',
-            'CUSTOMER_PURCHASE_ORDER_NUMBER',
-            'MTV_ORDER_NUMBER',
-            'MTV_ORDER_ITEM_NUMBER',
-            'TYPE',
-            'SIZE',
-            'CLASS',
-            'CONFIGURATION',
-            'OPERATOR',
-            'ACCEPTED_QUANTITY'
-        ])
+        # Fill in the values (update specific cells as needed)
+        ws["A2"] = data.get('CUSTOMER_NAME', 'N/A')
+        ws["B2"] = data.get('CUSTOMER_PURCHASE_ORDER_NUMBER', 'N/A')
+        ws["C2"] = data.get('MTV_ORDER_NUMBER', 'N/A')
+        ws["D2"] = data.get('MTV_ORDER_ITEM_NUMBER', 'N/A')
+        ws["E2"] = data.get('TYPE', 'N/A')
+        ws["F2"] = data.get('SIZE', 'N/A')
+        ws["G2"] = data.get('CLASS', 'N/A')
+        ws["H2"] = data.get('CONFIGURATION', 'N/A')
+        ws["I2"] = data.get('OPERATOR', 'N/A')
+        ws["J2"] = data.get('ACCEPTED_QUANTITY', 'N/A')
 
-        # Append data row
-        ws.append([
-            data.get('CUSTOMER_NAME', 'N/A'),
-            data.get('CUSTOMER_PURCHASE_ORDER_NUMBER', 'N/A'),
-            data.get('MTV_ORDER_NUMBER', 'N/A'),
-            data.get('MTV_ORDER_ITEM_NUMBER', 'N/A'),
-            data.get('TYPE', 'N/A'),
-            data.get('SIZE', 'N/A'),
-            data.get('CLASS', 'N/A'),
-            data.get('CONFIGURATION', 'N/A'),
-            data.get('OPERATOR', 'N/A'),
-            data.get('ACCEPTED_QUANTITY', 'N/A')
-        ])
+        # Save to a unique filename in static folder
+        if not os.path.exists("static"):
+            os.makedirs("static")
 
-        # Save the file temporarily
-        file_path = 'MTV-QC-FM-013A_Rev.00 - MTC.xlsx'
-        wb.save(file_path)
+        filename = f"static/excel_{uuid.uuid4().hex}.xlsx"
+        wb.save(filename)
 
-        # Return the file as response
-        return send_file(
-            file_path,
-            mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-            as_attachment=True,
-            download_name='GeneratedExcel.xlsx'
-        )
+        # Return the file URL
+        return jsonify({"url": f"https://excel-generator-pbcg.onrender.com/{filename}"})
 
     except Exception as e:
         return jsonify({'error': str(e)}), 500
