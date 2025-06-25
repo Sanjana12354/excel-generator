@@ -12,7 +12,7 @@ def generate_excel():
     print("Received data:", data)
 
     # Load template
-    template_path = 'template.xlsx'
+    template_path = 'MTV-QC-FM-013A_Rev.00 - MTC.xlsx'
     wb = openpyxl.load_workbook(template_path)
     ws = wb.active
 
