@@ -44,7 +44,7 @@ def generate_excel():
         ])
 
         # Save the file temporarily
-        file_path = 'GeneratedExcel.xlsx'
+        file_path = 'MTV-QC-FM-013A_Rev.00 - MTC.xlsx'
         wb.save(file_path)
 
         # Return the file as response
