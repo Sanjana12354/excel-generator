@@ -18,7 +18,7 @@ def generate_excel():
     file_path = "generated_file.xlsx"
     wb.save(file_path)
 
-    return jsonify({"url": f"https://excel-generator-pbcg.onrender.com/download"})
+    return jsonify({"url": f"https://{request.host}/download"})
 
 @app.route('/download')
 def download_file():
