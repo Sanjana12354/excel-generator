@@ -10,32 +10,38 @@ def generate_excel():
     try:
         data = request.get_json()
 
-        # Load the existing template
+        # Load the existing Excel template
         template_path = "MTV-QC-FM-013A_Rev.00 - MTC.xlsx"
         wb = openpyxl.load_workbook(template_path)
         ws = wb.active
 
-        # Fill in the values (update specific cells as needed)
-        ws["A2"] = data.get('CUSTOMER_NAME', 'N/A')
-        ws["B2"] = data.get('CUSTOMER_PURCHASE_ORDER_NUMBER', 'N/A')
-        ws["C2"] = data.get('MTV_ORDER_NUMBER', 'N/A')
-        ws["D2"] = data.get('MTV_ORDER_ITEM_NUMBER', 'N/A')
-        ws["E2"] = data.get('TYPE', 'N/A')
-        ws["F2"] = data.get('SIZE', 'N/A')
-        ws["G2"] = data.get('CLASS', 'N/A')
-        ws["H2"] = data.get('CONFIGURATION', 'N/A')
-        ws["I2"] = data.get('OPERATOR', 'N/A')
-        ws["J2"] = data.get('ACCEPTED_QUANTITY', 'N/A')
+        # Safe cell write function
+        def safe_write(cell, value):
+            ws[cell] = value if value else 'N/A'
 
-        # Save to a unique filename in static folder
-        if not os.path.exists("static"):
-            os.makedirs("static")
+        # Fill in values
+        safe_write('C4', data.get('CUSTOMER_NAME', 'N/A'))
+        safe_write('C5', data.get('CUSTOMER_PURCHASE_ORDER_NUMBER', 'N/A'))
+        safe_write('C6', data.get('MTV_ORDER_NUMBER', 'N/A'))
+        safe_write('C7', data.get('MTV_ORDER_ITEM_NUMBER', 'N/A'))
+        safe_write('C9', data.get('TYPE', 'N/A'))
+        safe_write('C10', data.get('SIZE', 'N/A'))
+        safe_write('C11', data.get('CLASS', 'N/A'))
+        safe_write('C12', data.get('CONFIGURATION', 'N/A'))
+        safe_write('C13', data.get('OPERATOR', 'N/A'))
+        safe_write('C14', data.get('ACCEPTED_QUANTITY', 'N/A'))
 
-        filename = f"static/excel_{uuid.uuid4().hex}.xlsx"
-        wb.save(filename)
+        # Save as new file
+        output_filename = f"generated_excel_{uuid.uuid4().hex}.xlsx"
+        wb.save(output_filename)
 
-        # Return the file URL
-        return jsonify({"url": f"https://excel-generator-pbcg.onrender.com/{filename}"})
+        # Send file as download
+        return send_file(
+            output_filename,
+            mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            as_attachment=True,
+            download_name='GeneratedExcel.xlsx'
+        )
 
     except Exception as e:
         return jsonify({'error': str(e)}), 500
