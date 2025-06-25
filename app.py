@@ -1,35 +1,38 @@
+# app.py
 from flask import Flask, request, jsonify
-from openpyxl import Workbook
-import os
+import uuid
+import threading
+import time
 
 app = Flask(__name__)
 
-@app.route('/generate-excel', methods=['POST'])
-def generate_excel():
-    data = request.get_json()
-    # You can print to logs to verify payload
-    print("Received data:", data)
+# Store job results in-memory (for demo; use Redis or DB in production)
+results = {}
 
-    wb = Workbook()
-    ws = wb.active
+def generate_excel_job(job_id, data):
+    # Simulate long-running Excel generation (replace with real logic)
+    time.sleep(150)  # 2.5 minutes
+    # After generation, set the result
+    results[job_id] = {
+        "status": "completed",
+        "download_url": f"https://your-bucket.com/excels/{job_id}.xlsx"
+    }
 
-    ws.append(['Key', 'Value'])
-    for key, value in data.items():
-        ws.append([key, value])
+@app.route('/start-excel-job', methods=['POST'])
+def start_excel_job():
+    data = request.json
+    job_id = str(uuid.uuid4())
+    results[job_id] = { "status": "processing" }
+    thread = threading.Thread(target=generate_excel_job, args=(job_id, data))
+    thread.start()
+    return jsonify({ "job_id": job_id })
 
-    # Save to file
-    file_path = "/tmp/generated_file.xlsx"
-    wb.save(file_path)
-
-    # Return download link (you can customize this if needed)
-    return jsonify({"url": f"https://{request.host}/download"})
-
-
-@app.route('/download')
-def download_file():
-    return app.send_static_file("generated_file.xlsx")
-
+@app.route('/get-excel-job/<job_id>', methods=['GET'])
+def get_excel_job(job_id):
+    result = results.get(job_id)
+    if not result:
+        return jsonify({ "error": "Job not found" }), 404
+    return jsonify(result)
 
 if __name__ == '__main__':
-    port = int(os.environ.get("PORT", 5000))
-    app.run(host='0.0.0.0', port=port)
+    app.run(debug=True)
