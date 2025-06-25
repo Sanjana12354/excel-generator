@@ -1,51 +1,62 @@
 from flask import Flask, request, send_file, jsonify
 import openpyxl
-from openpyxl.utils import get_column_letter
-import tempfile
 import os
 
 app = Flask(__name__)
 
 @app.route('/generate-excel', methods=['POST'])
 def generate_excel():
-    data = request.get_json()
-    print("Received data:", data)
+    try:
+        # Get JSON payload
+        data = request.get_json()
 
-    # Load template
-    template_path = 'MTV-QC-FM-013A_Rev.00 - MTC.xlsx'
-    wb = openpyxl.load_workbook(template_path)
-    ws = wb.active
+        # Create a new Excel workbook
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.title = "Order Data"
 
-    # Safe function to avoid writing to merged cells
-    def safe_write(cell, value):
-        try:
-            if isinstance(ws[cell], openpyxl.cell.cell.Cell):
-                ws[cell].value = value
-        except Exception as e:
-            print(f"Skip cell {cell} due to error: {e}")
+        # Optional: Set headers
+        ws.append([
+            'CUSTOMER_NAME',
+            'CUSTOMER_PURCHASE_ORDER_NUMBER',
+            'MTV_ORDER_NUMBER',
+            'MTV_ORDER_ITEM_NUMBER',
+            'TYPE',
+            'SIZE',
+            'CLASS',
+            'CONFIGURATION',
+            'OPERATOR',
+            'ACCEPTED_QUANTITY'
+        ])
 
-    # Write data to Excel
-    safe_write('C4', data.get('CUSTOMER_NAME', 'N/A'))
-    safe_write('C5', data.get('CUSTOMER_PURCHASE_ORDER_NUMBER', 'N/A'))
-    safe_write('C6', data.get('MTV_ORDER_NUMBER', 'N/A'))
-    safe_write('C7', data.get('MTV_ORDER_ITEM_NUMBER', 'N/A'))
-    safe_write('C9', data.get('TYPE', 'N/A'))
-    safe_write('C10', data.get('SIZE', 'N/A'))
-    safe_write('C11', data.get('CLASS', 'N/A'))
-    safe_write('C12', data.get('CONFIGURATION', 'N/A'))
-    safe_write('C13', data.get('OPERATOR', 'N/A'))
-    safe_write('C14', data.get('ACCEPTED_QUANTITY', 'N/A'))
+        # Append data row
+        ws.append([
+            data.get('CUSTOMER_NAME', 'N/A'),
+            data.get('CUSTOMER_PURCHASE_ORDER_NUMBER', 'N/A'),
+            data.get('MTV_ORDER_NUMBER', 'N/A'),
+            data.get('MTV_ORDER_ITEM_NUMBER', 'N/A'),
+            data.get('TYPE', 'N/A'),
+            data.get('SIZE', 'N/A'),
+            data.get('CLASS', 'N/A'),
+            data.get('CONFIGURATION', 'N/A'),
+            data.get('OPERATOR', 'N/A'),
+            data.get('ACCEPTED_QUANTITY', 'N/A')
+        ])
 
-    # Save to a temporary file
-    with tempfile.NamedTemporaryFile(delete=False, suffix=".xlsx") as tmp:
-        wb.save(tmp.name)
-        tmp_path = tmp.name
+        # Save the file temporarily
+        file_path = 'GeneratedExcel.xlsx'
+        wb.save(file_path)
 
-    return send_file(tmp_path, as_attachment=True, download_name="generated_excel.xlsx")
+        # Return the file as response
+        return send_file(
+            file_path,
+            mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            as_attachment=True,
+            download_name='GeneratedExcel.xlsx'
+        )
 
-@app.route('/')
-def root():
-    return 'Excel API Running'
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
     app.run(debug=True)
