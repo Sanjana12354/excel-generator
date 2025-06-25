@@ -20,7 +20,7 @@ def generate_excel():
         if ws['C4'].coordinate == ws.merged_cells.ranges[0].start_cell.coordinate:
             ws['C4'] = data.get('CUSTOMER_NAME', 'N/A')
 
-        ws['C5'] = data.get('CUSTOMER_PURCHASE_ORDER_NUMBER', 'N/A')  # ensure C5 is not a merged range
+        ws['C8'] = data.get('CUSTOMER_PURCHASE_ORDER_NUMBER', 'N/A')  # ensure C5 is not a merged range
         ws['C6'] = data.get('MTV_ORDER_NUMBER', 'N/A')
         ws['C7'] = data.get('MTV_ORDER_ITEM_NUMBER', 'N/A')
         ws['C9'] = data.get('TYPE', 'N/A')
