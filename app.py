@@ -1,23 +1,27 @@
-from flask import Flask, request, send_file, jsonify
-import openpyxl
 import os
-import uuid
+from flask import Flask, request, send_file, jsonify
+from openpyxl import load_workbook
+from io import BytesIO
 
 app = Flask(__name__)
 
-@app.route('/generate-excel', methods=['POST'])
+TEMPLATE_FILENAME = "MTV-QC-FM-013A_Rev.00 - MTC.xlsx"
+
+@app.route("/generate-excel", methods=["POST"])
 def generate_excel():
     try:
-        data = request.get_json()
+        # Load the Excel template
+        template_path = os.path.join(os.getcwd(), TEMPLATE_FILENAME)
+        if not os.path.exists(template_path):
+            return jsonify({"error": f"Template file not found at {template_path}"}), 500
 
-        # Load the existing Excel template
-        template_path = "MTV-QC-FM-013A_Rev.00 - MTC.xlsx"
-        wb = openpyxl.load_workbook(template_path)
+        wb = load_workbook(template_path)
         ws = wb.active
 
-        # Safe cell write function
+        data = request.json
+
         def safe_write(cell, value):
-            ws[cell] = value if value else 'N/A'
+            ws[cell] = value if value else "N/A"
 
         # Fill in values
         safe_write('C4', data.get('CUSTOMER_NAME', 'N/A'))
@@ -31,20 +35,21 @@ def generate_excel():
         safe_write('C13', data.get('OPERATOR', 'N/A'))
         safe_write('C14', data.get('ACCEPTED_QUANTITY', 'N/A'))
 
-        # Save as new file
-        output_filename = f"generated_excel_{uuid.uuid4().hex}.xlsx"
-        wb.save(output_filename)
+        # Save to a BytesIO stream
+        output = BytesIO()
+        wb.save(output)
+        output.seek(0)
 
-        # Send file as download
+        # Send file back
         return send_file(
-            output_filename,
+            output,
             mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
             as_attachment=True,
             download_name='GeneratedExcel.xlsx'
         )
 
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return jsonify({"error": str(e)}), 500
 
-if __name__ == '__main__':
-    app.run(debug=True)
+if __name__ == "__main__":
+    app.run(host='0.0.0.0', port=8080)
