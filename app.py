@@ -24,16 +24,16 @@ def generate_excel():
             pass
 
     # Fill specific cells with values from payload
-    safe_write('C4', data.get('CUSTOMER_NAME', ''))
-    safe_write('C5', data.get('CUSTOMER_PURCHASE_ORDER_NUMBER', ''))
-    safe_write('C6', data.get('MTV_ORDER_NUMBER', ''))
-    safe_write('C7', data.get('MTV_ORDER_ITEM_NUMBER', ''))
-    safe_write('C9', data.get('TYPE', ''))
-    safe_write('C10', data.get('SIZE', ''))
-    safe_write('C11', data.get('CLASS', ''))
-    safe_write('C12', data.get('CONFIGURATION', ''))
-    safe_write('C13', data.get('OPERATOR', ''))
-    safe_write('C14', data.get('ACCEPTED_QUANTITY', ''))
+    safe_write('F9', data.get('CUSTOMER_NAME', ''))
+    safe_write('F10', data.get('CUSTOMER_PURCHASE_ORDER_NUMBER', ''))
+    safe_write('F12', data.get('MTV_ORDER_NUMBER', ''))
+    safe_write('F13', data.get('MTV_ORDER_ITEM_NUMBER', ''))
+    safe_write('C15', data.get('TYPE', ''))
+    safe_write('C16', data.get('SIZE', ''))
+    safe_write('C17', data.get('CLASS', ''))
+    safe_write('C21', data.get('CONFIGURATION', ''))
+    safe_write('C20', data.get('OPERATOR', ''))
+    safe_write('C24', data.get('ACCEPTED_QUANTITY', ''))
 
     # Save to a new in-memory Excel file
     output = io.BytesIO()
