@@ -1,50 +1,55 @@
-# app.py
-from flask import Flask, request, send_file, jsonify
-import io
+from flask import Flask, request, jsonify, send_file
 from openpyxl import load_workbook
+import os
+import io
 
 app = Flask(__name__)
 
+EXCEL_FILENAME = "MTV-QC-FM-013A_Rev.00 - MTC.xlsx"
+EXCEL_PATH = os.path.join(os.getcwd(), EXCEL_FILENAME)
+
 @app.route('/generate-excel', methods=['POST'])
 def generate_excel():
-    try:
-        data = request.get_json()
+    data = request.get_json()
+    print("Received data:", data)
 
-        # Load the template
-        template_path = 'MTV-QC-FM-013A_Rev.00 - MTC.xlsx'
-        workbook = load_workbook(template_path)
-        sheet = workbook.active
+    # Load Excel template
+    workbook = load_workbook(EXCEL_PATH)
+    sheet = workbook.active
 
-        # Safe write helper
-        def safe_write(cell, value):
-            try:
-                sheet[cell] = value
-            except:
-                pass
+    def safe_write(cell, value):
+        try:
+            sheet[cell] = value
+        except:
+            pass
 
-        # Fill data into template
-        safe_write('C4', data.get('CUSTOMER_NAME', 'N/A'))
-        safe_write('C5', data.get('CUSTOMER_PURCHASE_ORDER_NUMBER', 'N/A'))
-        safe_write('C6', data.get('MTV_ORDER_NUMBER', 'N/A'))
-        safe_write('C7', data.get('MTV_ORDER_ITEM_NUMBER', 'N/A'))
-        safe_write('C9', data.get('TYPE', 'N/A'))
-        safe_write('C10', data.get('SIZE', 'N/A'))
-        safe_write('C11', data.get('CLASS', 'N/A'))
-        safe_write('C12', data.get('CONFIGURATION', 'N/A'))
-        safe_write('C13', data.get('OPERATOR', 'N/A'))
-        safe_write('C14', data.get('ACCEPTED_QUANTITY', 'N/A'))
+    # Fill specific cells with values from payload
+    safe_write('C4', data.get('CUSTOMER_NAME', ''))
+    safe_write('C5', data.get('CUSTOMER_PURCHASE_ORDER_NUMBER', ''))
+    safe_write('C6', data.get('MTV_ORDER_NUMBER', ''))
+    safe_write('C7', data.get('MTV_ORDER_ITEM_NUMBER', ''))
+    safe_write('C9', data.get('TYPE', ''))
+    safe_write('C10', data.get('SIZE', ''))
+    safe_write('C11', data.get('CLASS', ''))
+    safe_write('C12', data.get('CONFIGURATION', ''))
+    safe_write('C13', data.get('OPERATOR', ''))
+    safe_write('C14', data.get('ACCEPTED_QUANTITY', ''))
 
-        # Save to BytesIO
-        output = io.BytesIO()
-        workbook.save(output)
-        output.seek(0)
+    # Save to a new in-memory Excel file
+    output = io.BytesIO()
+    workbook.save(output)
+    output.seek(0)
 
-        return send_file(
-            output,
-            as_attachment=True,
-            download_name='GeneratedExcel.xlsx',
-            mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-        )
+    # Save also to disk so it can be downloaded via /download
+    with open("latest.xlsx", "wb") as f:
+        f.write(output.getbuffer())
 
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
+    return jsonify({"url": f"https://{request.host}/download"})
+
+@app.route('/download')
+def download_file():
+    return send_file("latest.xlsx", as_attachment=True)
+
+if __name__ == '__main__':
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host='0.0.0.0', port=port)
