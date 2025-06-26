@@ -1,29 +1,33 @@
-import os
 from flask import Flask, request, send_file, jsonify
-from openpyxl import load_workbook
-from io import BytesIO
+import openpyxl
+import os
+import tempfile
+import shutil
 
 app = Flask(__name__)
 
-TEMPLATE_FILENAME = "MTV-QC-FM-013A_Rev.00 - MTC.xlsx"
-
-@app.route("/generate-excel", methods=["POST"])
+@app.route('/generate-excel', methods=['POST'])
 def generate_excel():
     try:
-        # Load the Excel template
-        template_path = os.path.join(os.getcwd(), TEMPLATE_FILENAME)
-        if not os.path.exists(template_path):
-            return jsonify({"error": f"Template file not found at {template_path}"}), 500
+        data = request.get_json()
 
-        wb = load_workbook(template_path)
+        template_path = 'MTV-QC-FM-013A_Rev.00 - MTC.xlsx'
+        if not os.path.exists(template_path):
+            return jsonify({'error': 'Template file not found.'}), 500
+
+        temp_dir = tempfile.mkdtemp()
+        temp_file = os.path.join(temp_dir, 'FilledTemplate.xlsx')
+        shutil.copy(template_path, temp_file)
+
+        wb = openpyxl.load_workbook(temp_file)
         ws = wb.active
 
-        data = request.json
-
         def safe_write(cell, value):
-            ws[cell] = value if value else "N/A"
+            try:
+                ws[cell] = value
+            except:
+                pass
 
-        # Fill in values
         safe_write('C4', data.get('CUSTOMER_NAME', 'N/A'))
         safe_write('C5', data.get('CUSTOMER_PURCHASE_ORDER_NUMBER', 'N/A'))
         safe_write('C6', data.get('MTV_ORDER_NUMBER', 'N/A'))
@@ -35,21 +39,20 @@ def generate_excel():
         safe_write('C13', data.get('OPERATOR', 'N/A'))
         safe_write('C14', data.get('ACCEPTED_QUANTITY', 'N/A'))
 
-        # Save to a BytesIO stream
-        output = BytesIO()
-        wb.save(output)
-        output.seek(0)
+        wb.save(temp_file)
 
-        # Send file back
         return send_file(
-            output,
-            mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            temp_file,
             as_attachment=True,
             download_name='GeneratedExcel.xlsx'
         )
 
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        return jsonify({'error': str(e)}), 500
 
-if __name__ == "__main__":
-    app.run(host='0.0.0.0', port=8080)
+    finally:
+        if 'temp_dir' in locals() and os.path.exists(temp_dir):
+            shutil.rmtree(temp_dir)
+
+if __name__ == '__main__':
+    app.run(debug=True)
